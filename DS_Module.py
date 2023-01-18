@@ -2,7 +2,7 @@
 All the functions in this module are written by dr. M. Emile F. Apol, 
 Hanze University of Applied Sciences, Groningen
 """
-# QQ Pot
+# QQ Plot
 def DS_Q_Q_Plot(y, est = 'robust', **kwargs):
     """
     *
@@ -64,15 +64,15 @@ def DS_Q_Q_Plot(y, est = 'robust', **kwargs):
     else:
         print('Wrong estimation method chosen!')
         return()
-        
+
     print('Estimation method: ' + est)
-    print('n = {:d}, mu = {:.4g}, sigma = {:.4g}'.format(n, mu,sigma))
-    
+    print('n = {:d}, mu = {:.4g}, sigma = {:.4g}'.format(n, mu, sigma))
+
     # Expected number of deviations (95% confidence level):
     n_dev = np.round(0.05*n)
-    
+
     print('Expected number of data outside CI: {:.0f}'.format(n_dev))
-         
+
     # Perform z-transform: sample quantiles z.i
     z_i = (y_os - mu)/sigma
 
@@ -103,3 +103,82 @@ def DS_Q_Q_Plot(y, est = 'robust', **kwargs):
     plt.show()
     pass;
 
+
+# QQ Hist
+def DS_Q_Q_Hist(y, est='robust', **kwargs):
+    """
+    *
+    Function DS_Q_Q_Hist(y, est='robust', **kwargs)
+    
+       This function makes a histogram of the data and superimposes a fitted normal
+       distribution.
+       
+    Requires:            - 
+    
+    Arguments:
+      y                  data array
+      est                Estimation method for normal parameters mu and sigma:
+                         either 'robust' (default), or 'ML' (Maximum Likelihood),
+                         or 'preset' (given values)
+      N.B. If est='preset' than the optional parameters mu, sigma must be provided:
+      mu                 preset value of mu
+      sigma              preset value of sigma
+    
+    Returns:
+      Estimations of mu and sigma
+      Histogram of data with estimated normal distribution superimposed
+      
+    Author:            M.E.F. Apol
+    Date:              2020-01-06
+    """
+    
+    import numpy as np
+    from scipy.stats import iqr # iqr is the Interquartile Range function
+    from scipy.stats import norm
+    import matplotlib.pyplot as plt
+    
+    # First, get the optional arguments mu and sigma:
+    mu_0 = kwargs.get('mu', None)
+    sigma_0 = kwargs.get('sigma', None)
+    
+    n = len(y)
+    
+    # Estimates of mu and sigma:
+    # ML estimates:
+    mu_ML = np.mean(y)
+    sigma2_ML = np.var(y) # biased estimate
+    sigma_ML = np.std(y) 
+    s2 = np.var(y, ddof=1) # unbiased estimate
+    s = np.std(y, ddof=1) 
+    # Robust estimates:
+    mu_R = np.median(y)
+    sigma_R = iqr(y)/1.349
+
+    # Assign values of mu and sigma for z-transform:
+    if est == 'ML':
+        mu, sigma = mu_ML, s       
+    elif est == 'robust':
+        mu, sigma = mu_R, sigma_R
+    elif est == 'preset':
+        mu, sigma = mu_0, sigma_0
+    else:
+        print('Wrong estimation method chosen!')
+        return()
+    print('Estimation method: ' + est)
+    print('mu = {:.4g}, sigma = {:.4g}'.format(mu,sigma))
+        
+    # Calculate the CLT normal distribution:
+    x = np.linspace(np.min(y), np.max(y), 501)
+    rv = np.array([norm.pdf(xi, loc = mu, scale = sigma) for xi in x])
+    
+    # Make a histogram with corresponding normal distribution:
+    plt.hist(x=y, density=True, bins='auto', 
+             color='darkgrey',alpha=1, rwidth=1, label='experimental')
+    plt.plot(x, rv, 'r', label='normal approximation')
+    plt.grid(axis='y', alpha=0.5)
+    plt.xlabel('Values, $y$')
+    plt.ylabel('Probability $f(y)$')
+    plt.title('Histogram with corresponding normal distribution (' + est + ')')
+    plt.legend(loc='best')
+    plt.show()
+    pass;
